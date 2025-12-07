@@ -1,70 +1,67 @@
-def add(a, b):
-    return a + b
+import curses
+from curses import wrapper
+from colorama import Fore, Style
 
-def subtract(a, b):
-    return a - b
+# Calculator button layout
+buttons = [
+    ["7", "8", "9", "÷"],
+    ["4", "5", "6", "×"],
+    ["1", "2", "3", "-"],
+    ["0", ".", "=", "+"],
+    ["C", "exit", "", ""]
+]
 
-def multiply(a, b):
-    return a * b
+# Map operators to Python operators
+operator_map = {"×": "*", "÷": "/"}
 
-def divide(a, b):
-    if b == 0:
-        return "Error! Division by zero."
-    return a / b
-
-def modulo(a, b):
-    if b == 0:
-        return "Error! Division by zero."
-    return a % b
-
-def power(a, b):
-    return a ** b
-
-def calculator():
-    print("=== WELCOME TO THE INTERACTIVE CALCULATOR ===")
+def run_calculator(stdscr):
+    curses.curs_set(0)
+    current_expr = ""
+    row, col = 0, 0
     
     while True:
-        print("\nAvailable operations:")
-        print("1. Add (+)")
-        print("2. Subtract (-)")
-        print("3. Multiply (*)")
-        print("4. Divide (/)")
-        print("5. Modulo (%)")
-        print("6. Power (^)")
-        print("7. Exit")
+        stdscr.clear()
+        stdscr.addstr(0, 0, "iPhone Calculator (Use arrows to move, Enter to press)")
+        stdscr.addstr(1, 0, "Expression: " + current_expr)
         
-        choice = input("Select an operation (1-7): ")
+        # Display buttons
+        for r, button_row in enumerate(buttons):
+            for c, label in enumerate(button_row):
+                x = c * 6
+                y = r + 3
+                if r == row and c == col:
+                    stdscr.addstr(y, x, f"[{label.center(3)}]", curses.A_REVERSE)
+                else:
+                    stdscr.addstr(y, x, f" {label.center(3)} ")
         
-        if choice == "7":
-            print("Goodbye!")
-            break
+        key = stdscr.getch()
         
-        if choice not in ["1","2","3","4","5","6"]:
-            print("Invalid choice, try again.")
-            continue
+        # Arrow navigation
+        if key == curses.KEY_UP and row > 0: row -= 1
+        elif key == curses.KEY_DOWN and row < len(buttons) - 1: row += 1
+        elif key == curses.KEY_LEFT and col > 0: col -= 1
+        elif key == curses.KEY_RIGHT and col < 3: col += 1
+        # Enter key to press button
+        elif key in [10, 13]:
+            label = buttons[row][col]
+            if label in ["", None]: continue
+            if label == "=":
+                try:
+                    expr = current_expr
+                    for op, py_op in operator_map.items():
+                        expr = expr.replace(op, py_op)
+                    current_expr = str(eval(expr))
+                except Exception:
+                    current_expr = "Error"
+            elif label.upper() == "C":
+                current_expr = ""
+            elif label.lower() == "exit":
+                break
+            else:
+                current_expr += label
         
-        try:
-            num1 = float(input("Enter first number: "))
-            num2 = float(input("Enter second number: "))
-        except ValueError:
-            print("Invalid number, please enter numeric values.")
-            continue
-        
-        if choice == "1":
-            result = add(num1, num2)
-        elif choice == "2":
-            result = subtract(num1, num2)
-        elif choice == "3":
-            result = multiply(num1, num2)
-        elif choice == "4":
-            result = divide(num1, num2)
-        elif choice == "5":
-            result = modulo(num1, num2)
-        elif choice == "6":
-            result = power(num1, num2)
-        
-        print(f"Result: {result}")
+        stdscr.refresh()
 
-# Run the calculator
+# Run calculator
 if __name__ == "__main__":
-    calculator()
+    wrapper(run_calculator)
